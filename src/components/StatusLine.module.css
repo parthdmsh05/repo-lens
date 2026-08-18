@@ -1,0 +1,37 @@
+.line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-5);
+  background: var(--color-bg-inset);
+  border-bottom: 1px solid var(--color-border);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.segment {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.label {
+  color: var(--color-text-faint);
+  transition: color 0.2s ease;
+}
+
+.label.past {
+  color: var(--color-text-muted);
+}
+
+.label.active {
+  color: var(--color-accent);
+  font-weight: 500;
+}
+
+.arrow {
+  color: var(--color-text-faint);
+}
