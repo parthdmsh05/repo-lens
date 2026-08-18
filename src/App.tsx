@@ -1,79 +1,42 @@
-import { useEffect, useState } from 'react';
-import { StatusLine } from './components/StatusLine';
-import { searchRepositories } from './services/repositories';
-import { isApiError } from './services/githubClient';
-import type { ApiError, GitHubSearchResponse } from './types/github';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { StatusLine, type JourneyStage } from './components/StatusLine';
+import { SearchPage } from './pages/SearchPage';
+import { RepositoryDetailsPage } from './pages/RepositoryDetailsPage';
 import styles from './App.module.css';
 
 /**
- * MILESTONE 1 — Project Setup & Plumbing Check
- *
- * This is not the real app UI yet. It exists to prove, end to end, that:
- *   UI -> service layer -> GitHub API -> normalized response/error -> UI
- * actually works before any real screens get built on top of it.
- *
- * It will be replaced by proper routing (SearchPage / RepositoryDetailsPage)
- * in Milestone 2.
+ * Figures out which stage of the SEARCH -> DISCOVER -> INVESTIGATE ->
+ * UNDERSTAND journey to highlight, based on the current URL.
+ * Right now this is simple (home = search, anything else = discover);
+ * it gets more precise in later milestones as the details page grows
+ * actual sections (languages, activity, contributors).
  */
-function App() {
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [result, setResult] = useState<GitHubSearchResponse | null>(null);
-  const [error, setError] = useState<ApiError | null>(null);
+function stageForPath(pathname: string): JourneyStage {
+  if (pathname === '/') return 'search';
+  return 'discover';
+}
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    async function checkConnectivity() {
-      try {
-        const data = await searchRepositories('react', controller.signal);
-        setResult(data);
-        setStatus('success');
-      } catch (err) {
-        if (err instanceof DOMException && err.name === 'AbortError') return;
-        setError(isApiError(err) ? err : { kind: 'unknown', message: 'Something went wrong.' });
-        setStatus('error');
-      }
-    }
-
-    checkConnectivity();
-    return () => controller.abort();
-  }, []);
+// Small wrapper needed because useLocation() only works INSIDE a
+// BrowserRouter, so it can't live directly in the App function below.
+function AppShell() {
+  const location = useLocation();
 
   return (
     <div className={styles.app}>
-      <StatusLine activeStage="search" />
-      <main className={styles.main}>
-        <h1 className={styles.title}>Repository Intelligence</h1>
-        <p className={styles.subtitle}>Milestone 1 — project setup &amp; API plumbing check</p>
-
-        <div className={styles.panel}>
-          {status === 'loading' && <p className={styles.mono}>Pinging GitHub API…</p>}
-
-          {status === 'success' && result && (
-            <>
-              <p className={styles.mono}>
-                ✓ Connected. Sample query "react" returned{' '}
-                <strong>{result.total_count.toLocaleString()}</strong> total matches, first page
-                has {result.items.length} items.
-              </p>
-              <ul className={styles.sampleList}>
-                {result.items.slice(0, 3).map((repo) => (
-                  <li key={repo.id}>
-                    {repo.full_name} — ★ {repo.stargazers_count.toLocaleString()}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-
-          {status === 'error' && error && (
-            <p className={styles.errorText}>
-              ✗ {error.kind}: {error.message}
-            </p>
-          )}
-        </div>
-      </main>
+      <StatusLine activeStage={stageForPath(location.pathname)} />
+      <Routes>
+        <Route path="/" element={<SearchPage />} />
+        <Route path="/repo/:owner/:name" element={<RepositoryDetailsPage />} />
+      </Routes>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppShell />
+    </BrowserRouter>
   );
 }
 
